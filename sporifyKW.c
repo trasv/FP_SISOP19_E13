@@ -11,8 +11,9 @@
 #include<sys/shm.h>
 #include<sys/ipc.h>
 #include<termios.h>
+#include<dirent.h>
 
-pthread_t tid1, tid2, tid3, tid4;
+pthread_t tid1, tid2, tid3, tid4, tid5;
 int maen=0;
 int putar_sekarang=0;
 int paus=0;
@@ -20,8 +21,12 @@ int trig=0;
 int berhenti=0;
 int prin_menu=0;
 int prin_menuplay=0;
+int prin_list=0;
 int selesaii=0;
+int i, j=0;
 char lagu[100];
+char song[100][100];
+char current[100];
 
 int getch()
 {
@@ -117,11 +122,21 @@ void* menu(void *arg)
 			//printf("play\n");
 			prin_menu=0;
 			prin_menuplay=1;
-			trig=1;
 			maen=1;
+			int baris=0, kolom=0;
 			while(1)
 			{
-				system("clear");
+				printf("\r");
+				//system("clear");
+				kolom=0;
+				while(song[baris][kolom]!='\0')
+				{
+					sprintf(current, "%s%c", current, song[baris][kolom]);
+					kolom++;
+				}
+				//printf("%s",current);
+				trig=1;
+
 				prin_menuplay=1;
 				action=getch();
 				if(action=='1')
@@ -130,23 +145,54 @@ void* menu(void *arg)
 		                        {
 		                                paus=1;
 		                                printf("pause\n");
+						current[0]='\0';
 		                        }
 		                        else if(paus==1)
 		                        {
 		                                paus=0;
 		                                printf("play\n");
+						current[0]='\0';
 		                        }
 
 				}
-				else if(action=='2') //stop
+				else if(action=='2')
+				{
+					printf("Next\n");
+					berhenti=1;
+					current[0]='\0';
+					baris++;
+				}
+				else if(action=='3')
+				{
+					printf("Previous\n");
+					berhenti=1;
+					current[0]='\0';
+					baris--;
+				}
+				else if(action=='4') //stop
 				{
 					printf("lagu berhenti\n");
+					current[0]='\0';
 					berhenti=1;
+					trig=0;
 					break;
 				}
 			}
 		}
 		else if(action=='2')
+		{
+			system("clear");
+			printf("\r");
+			prin_menu=0;
+			prin_list=1;
+			action=getch();
+			if(action=='1')
+			{
+				prin_menu=1;
+				prin_list=0;
+			}
+		}
+		else if(action=='3')
 		{
 			printf("\r");
 			printf("Terimakasih\n");
@@ -158,35 +204,18 @@ void* menu(void *arg)
 
 void* trigger(void *arg)
 {
-	//printf("tes\n");
 	while(1)
 	{
 		printf("\r");
 		if(trig==1)
 		{
-			//printf("ini masuk loh\n");
-
-			//maen=0;
-			//printf("putar skr %d",putar_sekarang);
-			//printf("maen %d",maen);
-
-			if(maen==1)
-			{
-				putar_sekarang=1;
-				//printf("ple\n");
-			}
-			if(putar_sekarang==1)
-			{
-				play(lagu);
-				//printf("ini dibawah play\n");
-			}
-			//printf("ini keluar loh\n");
-			trig=0;
-			maen=0;
-
+			play(current);
 		}
-		//printf("ini dibawah\n");
 	}
+}
+
+void* listlagu(void *arg)
+{
 }
 
 void* cetak(void *arg)
@@ -197,14 +226,50 @@ void* cetak(void *arg)
 		if(prin_menu==1)
 		{
 			printf("-------- Welcome to Spotify kw --------\n");
-			printf("1. Play Song\n2. Exit\n");
+			printf("1. Play Song\n2. List Song\n3. Exit\n");
+			sleep(1);
+			system("clear");
+		}
+		else if(prin_list==1)
+		{
+			printf("\r");
+			printf("All Tracks :\n\n");
+
+
+			DIR *d;
+			struct dirent *dir;
+			d = opendir(".");
+
+			if(d)
+			{
+				while ((dir = readdir(d)) != NULL)
+				{
+					char x[100];
+					strcpy(x,dir->d_name);
+					if(x[strlen(x)-1] == '3' && x[strlen(x)-2] == 'p' && x[strlen(x)-3] == 'm')
+					{
+						for(i=0;i<strlen(x);i++)
+						{
+							song[j][i] = x[i];
+						}
+						for(i=0;i<strlen(x);i++)
+						{
+							printf("%c",song[j][i]);
+						}
+						j++;
+						printf("\n");
+					}
+				}
+				closedir(d);
+			}
+			printf("\nPress 1 to back\n");
 			sleep(1);
 			system("clear");
 		}
 		else if(prin_menuplay==1)
 		{
-			printf("Now Playing : %s\n",lagu);
-			printf("1. Pause/Play\n2. Stop\n");
+			printf("Now Playing : %s\n",current);
+			printf("1. Pause/Play\n2. Next\n3. Previous\n4. Stop\n");
 			sleep(1);
 			system("clear");
 		}
@@ -224,23 +289,25 @@ void* selesai(void *arg)
 	pthread_kill(tid2, SIGKILL);
 	pthread_kill(tid3, SIGKILL);
 	pthread_kill(tid4, SIGKILL);
-	//pthread_kill(tid5, SIGKILL);
+	pthread_kill(tid5, SIGKILL);
 
 }
 
 int main(void)
 {
-	strcpy(lagu,"The_Bravery.mp3");
+	//strcpy(lagu,"The_Bravery.mp3");
 
 	pthread_create(&(tid1), NULL, menu, NULL);
 	pthread_create(&(tid2), NULL, trigger, NULL);
 	pthread_create(&(tid3), NULL, cetak, NULL);
 	pthread_create(&(tid4), NULL, selesai, NULL);
+	pthread_create(&(tid5), NULL, listlagu, NULL);
 
 	pthread_join(tid1, NULL);
 	pthread_join(tid2, NULL);
 	pthread_join(tid3, NULL);
 	pthread_join(tid4, NULL);
+	pthread_join(tid5, NULL);
 
     return 0;
 }
