@@ -27,7 +27,7 @@
 #endif
 
 static const char *dirpath = "/home/anargya";
-char lokasiMount[] = "/home/anargya/Sistem_Operasi/FP/coba";
+char lokasiMount[] = "/home/anargya/coba";
 
 char judulPop[1000];
 
@@ -78,7 +78,40 @@ char *dequeue(struct queue *qp){
 	return judulPop;
 }
 
-int cp(const char *to, const char *from)
+void judulSpasi(char judul[1000], char judulBaru[1000]){
+	int flag = 0;
+	int count = 0;
+	
+	char temp[1000];
+	memset(temp, '\0', sizeof(temp));
+	
+	int i = 0;
+	while(judul[i] != '\0'){
+		if(flag == 0){
+			if(judul[i] == ' '){
+				strncpy(judulBaru, judul, i+count);
+				strcat(judulBaru, "\\");
+				strcat(judulBaru, judul+i);
+				flag = 1;
+				count++;
+			}
+		}else if(flag == 1){
+			if(judul[i] == ' ' && judul[i-1] != '\\'){
+				memset(temp, '\0', sizeof(temp));
+				strncpy(temp, judulBaru, i+count);
+				strcat(temp, "\\");
+				strcat(temp, judulBaru+i+count);
+				count++;
+				strcpy(judulBaru, temp);
+			}
+		}
+		i++;
+	}
+	if(count == 0)
+		strcpy(judulBaru, judul);
+}
+
+/*int cp(const char *to, const char *from)
 {
     int fd_to, fd_from;
     char buf[4096];
@@ -122,7 +155,7 @@ int cp(const char *to, const char *from)
         }
         close(fd_from);
 
-        /* Success! */
+        // Success!
         return 0;
     }
 
@@ -135,6 +168,71 @@ int cp(const char *to, const char *from)
 
     errno = saved_errno;
     return -1;
+}*/
+
+void moveLagu(struct queue *qp){
+	DIR *dir;
+	struct dirent *file;
+	
+	while(qp->head != NULL){
+		char isiQueue[1000];
+		strcpy(isiQueue, dequeue(qp));
+		dir = opendir(isiQueue);
+		
+		while ((file = readdir(dir)) != NULL) {
+			struct stat st;
+			memset(&st, 0, sizeof(st));
+			st.st_ino = file->d_ino;
+			st.st_mode = file->d_type << 12;
+			
+			char judul[1000];
+			memset(judul, '\0', sizeof(judul));
+			strcpy(judul, file->d_name);
+			int lenjudul = strlen(judul);
+			
+			char judulBaru[1000];
+			memset(judulBaru, '\0', sizeof(judulBaru));
+			judulSpasi(judul, judulBaru);
+			
+			char mp3[10] = ".mp3";
+			int lenmp3 = strlen(mp3);
+			
+			char direktoriAsli[1000];
+			strcpy(direktoriAsli, dirpath);
+			//strcat(direktoriAsli, "/");
+
+			char judulLengkap[1000];
+			strcpy(judulLengkap, isiQueue);
+			strcat(judulLengkap, "/");
+			
+			if (S_ISREG(st.st_mode))
+			{
+				if(lenjudul > lenmp3){
+					if(judul[lenjudul-1] == '3' && judul[lenjudul-2] == 'p' && judul[lenjudul-3] == 'm' && judul[lenjudul-4] == '.')
+					{
+						strcat(judulLengkap, judulBaru);
+						//cp(direktoriAsli, judulLengkap);
+						char isiSystem[1000];
+						strcpy(isiSystem, "cp ");
+						strcat(isiSystem, judulLengkap);
+						strcat(isiSystem, " ");
+						strcat(isiSystem, direktoriAsli);
+						system(isiSystem);
+					}
+				}
+			}
+			else if(S_ISDIR(st.st_mode))
+			{
+				strcat(judulLengkap, judul);
+				if(judul[0] != '.'){
+					//printf("\nini folder %s\n", de->d_name);
+					if(strcmp(judulLengkap, lokasiMount) != 0)
+						enqueue(qp, judulLengkap);
+				}
+			}
+		}
+		closedir(dir);
+	}
 }
 
 static int xmp_getattr(const char *path, struct stat *stbuf)
@@ -238,75 +336,28 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		}
 		else if(S_ISDIR(st.st_mode))
 		{
-			char judulfolder[1000];
-			printf("\nini folder %s\n", de->d_name);
-			strcpy(judulfolder, fpath);
-			strcat(judulfolder, "/");
-			strcat(judulfolder, de->d_name);
-			
-			if(strcmp(judulfolder, lokasiMount) != 0)
-				enqueue(qp, judulfolder);
+			char temp[1000];
+			strcpy(temp, de->d_name);
+			if(temp[0] != '.'){
+				char judulfolder[1000];
+				printf("\nini folder %s\n", de->d_name);
+				strcpy(judulfolder, fpath);
+				strcat(judulfolder, "/");
+				strcat(judulfolder, de->d_name);
+				
+				if(strcmp(judulfolder, lokasiMount) != 0)
+					enqueue(qp, judulfolder);
+			}
 		}
+		//while(qp->head != NULL)
+		//	printf("ISI QUEUE: %s\n", dequeue(qp));
 
 		if (filler(buf, de->d_name, &st, 0))
 			break;
 	}
-	closedir(dp);
+	moveLagu(qp);
 	
-	if(qp->head != NULL){
-		while(qp->head != NULL){
-			char isiQueue[1000];
-			strcpy(isiQueue, dequeue(qp));
-			
-			DIR *dir;
-			struct dirent *file;
-			
-			dir = opendir(isiQueue);
-			if (dir == NULL)
-				return -errno;
-			
-			while ((file = readdir(dir)) != NULL) {
-				struct stat st;
-				memset(&st, 0, sizeof(st));
-				st.st_ino = file->d_ino;
-				st.st_mode = file->d_type << 12;
-				
-				char judul[1000];
-				strcpy(judul, file->d_name);
-				int lenjudul = strlen(judul);
-				
-				char direktoriAsli[1000];
-				strcpy(direktoriAsli, dirpath);
-
-				char judulLengkap[1000];
-				strcpy(judulLengkap, isiQueue);
-				strcat(judulLengkap, "/");
-				strcat(judulLengkap, file->d_name);
-				
-				if (S_ISREG(st.st_mode))
-				{
-					if(judul[lenjudul-1] == '3' && judul[lenjudul-2] == 'p' && judul[lenjudul-3] == 'm' && judul[lenjudul-4] == '.')
-					{
-						cp(direktoriAsli, judulLengkap);
-					}
-				}
-				else if(S_ISDIR(st.st_mode))
-				{
-					char judulfolder[1000];
-					strcpy(judulfolder, isiQueue);
-					strcat(judulfolder, "/");
-					strcat(judulfolder, de->d_name);
-					if(strcmp(judulfolder, lokasiMount) != 0)
-						enqueue(qp, judulfolder);
-				}
-
-				if (filler(buf, de->d_name, &st, 0))
-					break;
-			}
-			closedir(dir);
-		}
-	}
-
+	closedir(dp);
 	return 0;
 }
 
