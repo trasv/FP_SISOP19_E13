@@ -263,7 +263,7 @@ void* cetak(void *arg)
 
 			DIR *d;
 			struct dirent *dir;
-			d = opendir(".");
+			d = opendir("/home/trasv/Timo/Sisop/fp/fusefp/");
 
 			if(d)
 			{
