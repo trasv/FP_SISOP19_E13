@@ -13,7 +13,7 @@
 #include<termios.h>
 #include<dirent.h>
 
-pthread_t tid1, tid2, tid3, tid4, tid5;
+pthread_t tid1, tid2, tid3, tid4;
 int maen=0;
 int putar_sekarang=0;
 int paus=0;
@@ -296,13 +296,11 @@ int main(void)
 	pthread_create(&(tid2), NULL, trigger, NULL);
 	pthread_create(&(tid3), NULL, cetak, NULL);
 	pthread_create(&(tid4), NULL, selesai, NULL);
-	pthread_create(&(tid5), NULL, listlagu, NULL);
 
 	pthread_join(tid1, NULL);
 	pthread_join(tid2, NULL);
 	pthread_join(tid3, NULL);
 	pthread_join(tid4, NULL);
-	pthread_join(tid5, NULL);
 
     return 0;
 }
