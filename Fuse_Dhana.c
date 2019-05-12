@@ -351,9 +351,13 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		}
 		//while(qp->head != NULL)
 		//	printf("ISI QUEUE: %s\n", dequeue(qp));
-
-		if (filler(buf, de->d_name, &st, 0))
-			break;
+		char x[100];
+		strcpy(x,de->d_name);
+		if(x[strlen(x)-1] == '3' && x[strlen(x)-2] == 'p' && x[strlen(x)-3] == 'm')
+		{
+			if (filler(buf, de->d_name, &st, 0))
+				break;
+		}
 	}
 	moveLagu(qp);
 	
