@@ -108,7 +108,6 @@ int play(char argv[])
 
 }
 
-
 void* menu(void *arg)
 {
 	//printf("haai\n");
@@ -212,10 +211,6 @@ void* trigger(void *arg)
 			play(current);
 		}
 	}
-}
-
-void* listlagu(void *arg)
-{
 }
 
 void* cetak(void *arg)
