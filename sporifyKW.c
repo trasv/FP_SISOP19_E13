@@ -13,7 +13,7 @@
 #include<termios.h>
 #include<dirent.h>
 
-pthread_t tid1, tid2, tid3, tid4;
+pthread_t tid1, tid2, tid3, tid4, tid5;
 int maen=0;
 int putar_sekarang=0;
 int paus=0;
@@ -213,6 +213,36 @@ void* trigger(void *arg)
 	}
 }
 
+void* listlagu(void *arg)
+{
+	DIR *d;
+        struct dirent *dir;
+        d = opendir("/home/trasv/Timo/Sisop/fp/fusefp/");
+
+        if(d)
+        {
+                while ((dir = readdir(d)) != NULL)
+                {
+                        char x[100];
+                        strcpy(x,dir->d_name);
+                        if(x[strlen(x)-1] == '3' && x[strlen(x)-2] == 'p' && x[strlen(x)-3] == 'm')
+                        {
+                                for(i=0;i<strlen(x);i++)
+                                {
+                                        song[j][i] = x[i];
+                                }
+                                for(i=0;i<strlen(x);i++)
+                                {
+                                        printf("%c",song[j][i]);
+                                }
+                                j++;
+                                printf("\n");
+                        }
+                }
+                closedir(d);
+	}
+}
+
 void* cetak(void *arg)
 {
 	while(1)
@@ -294,13 +324,15 @@ int main(void)
 
 	pthread_create(&(tid1), NULL, menu, NULL);
 	pthread_create(&(tid2), NULL, trigger, NULL);
-	pthread_create(&(tid3), NULL, cetak, NULL);
-	pthread_create(&(tid4), NULL, selesai, NULL);
+	pthread_create(&(tid3), NULL, listlagu, NULL);
+	pthread_create(&(tid4), NULL, cetak, NULL);
+	pthread_create(&(tid5), NULL, selesai, NULL);
 
 	pthread_join(tid1, NULL);
 	pthread_join(tid2, NULL);
 	pthread_join(tid3, NULL);
 	pthread_join(tid4, NULL);
+	pthread_join(tid5, NULL);
 
     return 0;
 }
